@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Bomskuy</title>
+
+        <link rel="prefetch" as="image" href="assets/background.jpg" />
+        <link rel="prefetch" as="image" href="assets/bomb.png" />
+        <link rel="prefetch" as="image" href="assets/char_down.png" />
+        <link rel="prefetch" as="image" href="assets/char_left.png" />
+        <link rel="prefetch" as="image" href="assets/char_right.png" />
+        <link rel="prefetch" as="image" href="assets/char_up.png" />
+        <link rel="prefetch" as="image" href="assets/dog_down.png" />
+        <link rel="prefetch" as="image" href="assets/dog_left.png" />
+        <link rel="prefetch" as="image" href="assets/dog_right.png" />
+        <link rel="prefetch" as="image" href="assets/dog_up.png" />
+        <link rel="prefetch" as="image" href="assets/explosion.png" />
+        <link rel="prefetch" as="image" href="assets/heart.png" />
+        <link rel="prefetch" as="image" href="assets/ice.png" />
+        <link rel="prefetch" as="image" href="assets/tnt.png" />
+        <link rel="prefetch" as="image" href="assets/wall.png" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                min-height: 100dvh;
+                overflow: hidden;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            .scene {
+                width: 1000px;
+                height: 600px;
+                display: none;
+            }
+            .scene.active {
+                display: flex;
+            }
+            input,
+            select,
+            button {
+                border: black solid 2px;
+                border-radius: 0.5rem;
+                padding: 1rem;
+                background-color: red;
+                color: white;
+                box-sizing: border-box;
+            }
+            input::placeholder,
+            select::placeholder {
+                color: white;
+            }
+            input[type="button"],
+            input[type="submit"],
+            button {
+                background-color: black;
+                transition: all 100ms ease-in-out;
+            }
+            input[type="button"]:hover,
+            input[type="submit"]:hover,
+            button:hover {
+                scale: 1.05;
+            }
+            input[type="button"]:active,
+            input[type="submit"]:active,
+            button:active {
+                scale: 0.95;
+            }
+
+            #mainScene {
+                width: 400px;
+                flex-direction: column;
+                gap: 1rem;
+                justify-content: center;
+                align-items: center;
+            }
+
+            #mainScene > * {
+                width: 100%;
+            }
+
+            #gameMap {
+                flex: 1;
+                background-image: url("assets/background.jpg");
+                background-repeat: no-repeat;
+                background-position: center;
+                background-size: 100% 100%;
+                position: relative;
+            }
+
+            #gameMap > * {
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+
+            #gameGui {
+                background-color: black;
+                color: white;
+                width: 250px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 2rem;
+                gap: 2rem;
+            }
+
+            #gameGui p {
+                margin: 0;
+                width: 100%;
+                font-weight: bold;
+                font-size: large;
+            }
+
+            #guiStats > * {
+                margin-block: 2rem;
+            }
+
+            .stat {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                font-weight: bold;
+                font-size: large;
+            }
+
+            #guiStats > p > img {
+                width: 50px;
+            }
+
+            #guiHearts > div {
+                width: 36px;
+                height: 30px;
+                background-image: url("assets/heart_indicator.png");
+                background-size: 108px 30px;
+                scale: 1.5;
+                margin-inline: 0.5rem;
+                display: inline-block;
+            }
+
+            #guiHearts > div {
+                background-position: 0 0;
+            }
+
+            #guiHearts > div.break {
+                background-position: -72px 0;
+            }
+
+            .dialog {
+                z-index: 1000;
+                width: 1000px;
+                height: 600px;
+                position: absolute;
+                display: none;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                background-color: rgba(0, 0, 0, 0.75);
+                gap: 4px;
+            }
+
+            .dialog button {
+                border: none;
+            }
+
+            .dialog.show {
+                display: flex;
+            }
+
+            .dialog .dialog-content {
+                margin-block: 14px;
+                max-height: 300px;
+                overflow: auto;
+            }
+
+            .dialog .dialog-header,
+            .dialog .dialog-footer {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                width: 300px;
+                gap: 6px;
+            }
+
+            .dialog .dialog-header .title {
+                font-weight: 800;
+                font-size: 2rem;
+                text-align: center;
+                flex: 1;
+            }
+
+            .dialog .dialog-footer > * {
+                flex: 1;
+            }
+            .item {
+                display: inline-block;
+                font-size: 4rem;
+                transition: opacity 0.5s ease;
+                animation: float 3s ease-in-out infinite;
+            }
+
+            .item.taken {
+                opacity: 0;
+            }
+
+            @keyframes float {
+                0% {
+                    transform: translateY(0);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+                100% {
+                    transform: translateY(0);
+                }
+            }
+            @keyframes pop {
+                0% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                50% {
+                    transform: scale(1.5);
+                    opacity: 0.7;
+                }
+                100% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            th,
+            td {
+                padding: 10px;
+                text-align: center;
+                border-bottom: 1px solid white;
+            }
+
+            th {
+                font-weight: bold;
+            }
+
+            td {
+                font-size: 14px;
+            }
+
+            .icon > img {
+                height: 30px;
+            }
+        </style>
+    </head>
+    <body>
+        <form action="#" id="mainScene" class="scene">
+            <img src="assets/logo.png" alt="Logo" style="width: 300px" />
+            <input
+                type="text"
+                name="username"
+                placeholder="Enter your name"
+                required
+            />
+            <select name="difficulty" placeholder="Select difficulty" required>
+                <option value="easy">Easy</option>
+                <option value="normal">Normal</option>
+                <option value="hard">Hard</option>
+            </select>
+            <div style="display: flex; gap: 1rem">
+                <input style="flex: 1;" type="submit" value="Play" />
+                <input
+                    style="flex: 1"
+                    type="button"
+                    value="Instruction"
+                    onclick="showDialog('tutorDialog')"
+                />
+            </div>
+        </form>
+        <div class="scene" id="gameScene">
+            <div id="gameMap"></div>
+            <div id="gameGui">
+                <img id="guiHeader" src="assets/logo_white.png" alt="Logo" />
+                <div style="width: 100%">
+                    <p>Player: <span id="guiUsername">-</span></p>
+                    <p>Time: <span id="guiTimer">00:00</span></p>
+                </div>
+                <div id="guiStats">
+                    <div id="guiHearts">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                    <p class="stat">
+                        <img src="assets/wall_crack.png" alt="Brick Break" /> =
+                        <span id="guiBrick">0</span>
+                    </p>
+                    <p class="stat">
+                        <img src="assets/tnt.png" alt="TNT" /> =
+                        <span id="guiTNT">0</span>
+                    </p>
+                    <p class="stat">
+                        <img src="assets/ice.png" alt="Ice" /> =
+                        <span id="guiIce">0</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div id="tutorDialog" class="dialog">
+            <div class="dialog-header">
+                <h1 class="title">How to play!</h1>
+            </div>
+            <div class="dialog-content">
+                <ol>
+                    <li>Use W/A/S/D or arrow keys to move your character.</li>
+                    <li>
+                        Press Space to place bombs and break bricks or defeat
+                        enemies.
+                    </li>
+                    <li>Press P to pause or resume the game anytime.</li>
+                    <li>
+                        When paused, you can't move, place bombs, or be chased.
+                    </li>
+                    <li>Pick up items for extra power or surprises.</li>
+                    <li>
+                        Watch out for enemies that will chase you when they see
+                        you!
+                    </li>
+                </ol>
+            </div>
+            <div class="dialog-footer">
+                <button
+                    onclick="hideDialog()"
+                    style="background-color: cornflowerblue"
+                >
+                    Ok
+                </button>
+            </div>
+        </div>
+        <div id="pauseDialog" class="dialog">
+            <div class="dialog-header">
+                <h1 class="title">Paused</h1>
+            </div>
+            <div class="dialog-footer">
+                <button
+                    style="background-color: red"
+                    onclick="window.location.href = '/'"
+                >
+                    Back
+                </button>
+                <button onclick="hideDialog();isPaused = false;startTimer()">
+                    Resume
+                </button>
+            </div>
+        </div>
+        <div class="dialog" id="goverDialog">
+            <div class="dialog-header">
+                <h1 class="title">Game Over</h1>
+            </div>
+            <div class="dialog-content">
+                <p
+                    style="
+                        font-weight: medium;
+                        font-size: large;
+                        margin-bottom: 12px;
+                    "
+                >
+                    Well played <span id="goverUsername">(Unknown)</span>! You
+                    survive with <span id="goverTimer">00:00</span> and get:
+                </p>
+                <div style="display: flex; gap: 1rem; justify-content: center">
+                    <p class="stat">
+                        <img src="assets/wall_crack.png" alt="Brick Break" /> =
+                        <span id="goverBrick">0</span>
+                    </p>
+                    <p class="stat">
+                        <img src="assets/tnt.png" alt="TNT" /> =
+                        <span id="goverTNT">0</span>
+                    </p>
+                    <p class="stat">
+                        <img src="assets/ice.png" alt="Ice" /> =
+                        <span id="goverIce">0</span>
+                    </p>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button style="background-color: red" onclick="saveScore()">
+                    Save Score
+                </button>
+                <button
+                    style="background-color: cornflowerblue"
+                    onclick="showLeaderboard()"
+                >
+                    Leaderboard
+                </button>
+            </div>
+        </div>
+        <div class="dialog" id="countdownDialog">
+            <div class="dialog-header">
+                <h1 class="title" id="countdownNumber" style="font-size: 3rem">
+                    GET READY
+                </h1>
+            </div>
+        </div>
+        <div class="dialog" id="leaderboardDialog">
+            <div class="dialog-header">
+                <h1 class="title">Leaderboard</h1>
+            </div>
+            <div class="dialog-content">
+                <table id="leaderboardTable">
+                    <thead>
+                        <tr>
+                            <th>Player Name</th>
+                            <th>Time</th>
+                            <th class="icon">
+                                <img
+                                    src="assets/wall_crack.png"
+                                    alt="Wall Destroyed"
+                                />
+                            </th>
+                            <th class="icon">
+                                <img src="assets/bomb.png" alt="Bomb Range" />
+                            </th>
+                            <th class="icon">
+                                <img src="assets/ice.png" alt="Freezed" />
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="dialog-footer">
+                <button onclick="hideDialog();showGameover()">Back</button>
+            </div>
+        </div>
+        <script src="game.js"></script>
+        <script>
+            let formData = null;
+            document
+                .getElementById("mainScene")
+                .addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    formData = new FormData(e.target);
+                    gameStats["player"] = formData?.get("username");
+                    document.getElementById("guiUsername").textContent =
+                        formData?.get("username");
+                    setScene("gameScene");
+                    startCountdown();
+                });
+
+            setScene("mainScene");
+
+            function setScene(name) {
+                for (const child of document.querySelectorAll(".scene")) {
+                    if (child.id == name) child.classList.add("active");
+                    else child.classList.remove("active");
+                }
+            }
+
+            function showDialog(id) {
+                for (const dialog of document.querySelectorAll(".dialog")) {
+                    if (dialog.id == id) dialog.classList.add("show");
+                    else dialog.classList.remove("show");
+                }
+            }
+
+            function hideDialog() {
+                for (const showedDialog of document.querySelectorAll(
+                    ".dialog.show"
+                )) {
+                    showedDialog.classList.remove("show");
+                }
+            }
+        </script>
+        <script>
+            let timerId = null;
+
+            function formatTime(seconds) {
+                const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+                const secs = String(seconds % 60).padStart(2, "0");
+                return `${mins}:${secs}`;
+            }
+
+            function updateDisplay() {
+                document.getElementById("guiTimer").textContent = formatTime(
+                    gameStats["time"]
+                );
+
+                const hearts = document.getElementById("guiHearts").children;
+                for (let i = 0; i < 3; i++) {
+                    hearts.item(i).className =
+                        gameStats["life"] <= i ? "break" : null;
+                }
+                document.getElementById("guiBrick").textContent =
+                    gameStats["brick"] || 0;
+                document.getElementById("guiTNT").textContent =
+                    gameStats["tnt"] || 0;
+                document.getElementById("guiIce").textContent =
+                    gameStats["freeze"] || 0;
+            }
+
+            function startTimer() {
+                if (timerId) return;
+                timerId = setInterval(() => {
+                    gameStats["time"]++;
+                    updateDisplay();
+                }, 1000);
+            }
+
+            function stopTimer() {
+                clearInterval(timerId);
+                timerId = null;
+            }
+
+            function playGame() {
+                document.addEventListener("keydown", (e) => {
+                    if (e.key == "Escape") {
+                        isPaused = !isPaused;
+                        if (isPaused) {
+                            showDialog("pauseDialog");
+                            stopTimer();
+                        } else {
+                            hideDialog();
+                            startTimer();
+                        }
+                    }
+                });
+                startTimer();
+                initGame(document.getElementById("gameMap"));
+                statsListener = () => {
+                    updateDisplay();
+                    if (gameStats["life"] <= 0) showGameover();
+                };
+                const player = new Player();
+                player.setPosition(1, 1);
+
+                let brickCounts = 20;
+                let dogCounts =
+                    formData?.get("difficulty") == "easy"
+                        ? 1
+                        : formData?.get("difficulty") == "normal"
+                        ? 2
+                        : formData?.get("difficulty") == "hard"
+                        ? 3
+                        : 1;
+                while (brickCounts > 0) {
+                    let brickPosition = ranPosUntilValid(player);
+                    const brick = new Brick();
+                    brick.setPosition(brickPosition[0], brickPosition[1]);
+
+                    brickCounts--;
+                }
+
+                while (dogCounts > 0) {
+                    let dogPosition = ranPosUntilValid(player);
+                    const dog = new Dog(player);
+                    dog.setPosition(dogPosition[0], dogPosition[1]);
+                    dog.startChasing();
+                    dogCounts--;
+                }
+            }
+
+            function showGameover() {
+                isPaused = false;
+                stopTimer();
+                document.getElementById("goverUsername").textContent =
+                    formData?.get("username");
+                document.getElementById("goverTimer").textContent = formatTime(
+                    gameStats["time"]
+                );
+                document.getElementById("goverBrick").textContent =
+                    gameStats["walls"];
+                document.getElementById("goverTNT").textContent =
+                    gameStats["tnt"];
+                document.getElementById("goverIce").textContent =
+                    gameStats["freeze"];
+                showDialog("goverDialog");
+            }
+
+            function startCountdown() {
+                const countdownNumber =
+                    document.getElementById("countdownNumber");
+                let count = 3;
+                function animate() {
+                    countdownNumber.style.animation = "none";
+                    void countdownNumber.offsetWidth;
+                    countdownNumber.style.animation = "pop 0.5s ease";
+                }
+                showDialog("countdownDialog");
+                const interval = setInterval(() => {
+                    animate();
+                    countdownNumber.textContent = count;
+                    count--;
+
+                    if (count == -1) countdownNumber.textContent = "GO!";
+                    else if (count < 0) {
+                        clearInterval(interval);
+                        hideDialog();
+                        playGame();
+                    }
+                }, 1000);
+            }
+
+            function showLeaderboard() {
+                const tbody = document.querySelector("#leaderboardTable tbody");
+                tbody.innerHTML = "";
+
+                const data = JSON.parse(
+                    localStorage.getItem("leaderboard") || "[]"
+                );
+
+                data.push(gameStats);
+
+                data.sort((a, b) => {
+                    if (b.walls !== a.walls) return b.walls - a.walls;
+                    if (b.tnt !== a.tnt) return b.tnt - a.tnt;
+                    return b.freeze - a.freeze;
+                });
+
+                data.forEach((entry) => {
+                    const tr = document.createElement("tr");
+
+                    const tdName = document.createElement("td");
+                    tdName.textContent = entry.player || "Unknown";
+
+                    const tdTime = document.createElement("td");
+                    tdTime.textContent = formatTime(entry.time || 0);
+
+                    const tdWalls = document.createElement("td");
+                    tdWalls.textContent = entry.walls || 0;
+
+                    const tdTnt = document.createElement("td");
+                    tdTnt.textContent = entry.tnt || 0;
+
+                    const tdFreeze = document.createElement("td");
+                    tdFreeze.textContent = entry.freeze || 0;
+
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdTime);
+                    tr.appendChild(tdWalls);
+                    tr.appendChild(tdTnt);
+                    tr.appendChild(tdFreeze);
+
+                    tbody.appendChild(tr);
+                });
+                showDialog("leaderboardDialog");
+            }
+
+            function saveScore() {
+                let leaderboard = JSON.parse(
+                    localStorage.getItem("leaderboard") || "[]"
+                );
+
+                leaderboard.push(gameStats);
+
+                localStorage.setItem(
+                    "leaderboard",
+                    JSON.stringify(leaderboard)
+                );
+                window.location.href = "/";
+            }
+        </script>
+    </body>
+</html>
