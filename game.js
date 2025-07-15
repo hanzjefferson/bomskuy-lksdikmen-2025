@@ -360,7 +360,6 @@ class Dog extends GameObject {
         this.currentStep = 0;
         this.chasing = false;
         this.chaseInterval = null;
-        this.chaseRadius = 7;
     }
 
     startChasing() {
@@ -375,7 +374,7 @@ class Dog extends GameObject {
                 this.currentPath = [];
                 this.currentStep = 0;
             }
-        }, 1000-(200*(3-gameStats['life'])));
+        }, 1000-(35*gameStats['walls']));
     }
 
     stopChasing() {
@@ -600,7 +599,7 @@ function randomPosition() {
 
 function ranPosUntilValid(player) {
     let pos = randomPosition();
-    while (gameMap[pos[1]][pos[0]] != 0 || inRadius(player.position, pos)) {
+    while (gameMap[pos[1]][pos[0]] != 0 || inRadius(player.position, pos, 2)) {
         pos = randomPosition();
     }
     return pos;
